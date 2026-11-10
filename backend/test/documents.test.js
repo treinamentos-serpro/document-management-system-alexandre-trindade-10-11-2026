@@ -33,6 +33,13 @@ after(async () => {
   });
 });
 
+test('listagem sem documentos retorna uma lista vazia', async () => {
+  const response = await fetch(`${baseUrl}/documents`);
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { documents: [] });
+});
+
 test('upload, listagem e download seguem os contratos da API', async () => {
   const emptyForm = new FormData();
   const missingFileResponse = await fetch(`${baseUrl}/upload`, {
@@ -113,6 +120,30 @@ test('upload, listagem e download seguem os contratos da API', async () => {
     },
   );
   assert.equal(forwardedError, downloadError);
+});
+
+test('upload e download preservam bytes binarios e a listagem inclui o novo documento', async () => {
+  const content = Buffer.from([0x00, 0x01, 0x7f, 0x80, 0xfe, 0xff]);
+  const form = new FormData();
+  form.append('file', new Blob([content], { type: 'application/octet-stream' }), 'amostra.bin');
+
+  const uploadResponse = await fetch(`${baseUrl}/upload`, { method: 'POST', body: form });
+  assert.equal(uploadResponse.status, 201);
+  const { document } = await uploadResponse.json();
+  uploadedDocumentIds.push(document.id);
+  assert.equal(document.originalName, 'amostra.bin');
+  assert.equal(document.size, content.length);
+
+  const listResponse = await fetch(`${baseUrl}/documents`);
+  assert.equal(listResponse.status, 200);
+  const { documents } = await listResponse.json();
+  assert.deepEqual(documents.find((item) => item.id === document.id), document);
+
+  const downloadResponse = await fetch(`${baseUrl}/documents/${document.id}/download`);
+  assert.equal(downloadResponse.status, 200);
+  assert.match(downloadResponse.headers.get('content-disposition'), /amostra\.bin/);
+  assert.equal(downloadResponse.headers.get('content-type'), 'application/octet-stream');
+  assert.deepEqual(Buffer.from(await downloadResponse.arrayBuffer()), content);
 });
 
 test('repositório local rejeita nomes que escapam do diretório de armazenamento', async () => {
