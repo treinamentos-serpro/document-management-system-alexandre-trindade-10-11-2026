@@ -92,6 +92,8 @@ test('upload, listagem e download seguem os contratos da API', async () => {
   assert.equal(downloadResponse.status, 200);
   assert.match(downloadResponse.headers.get('content-disposition'), /attachment/);
   assert.match(downloadResponse.headers.get('content-disposition'), /amostra\.txt/);
+  assert.equal(downloadResponse.headers.get('content-type'), 'application/octet-stream');
+  assert.equal(downloadResponse.headers.get('x-content-type-options'), 'nosniff');
   assert.equal(await downloadResponse.text(), 'conteudo de teste');
 
   const missingResponse = await fetch(`${baseUrl}/documents/unknown/download`);
@@ -111,6 +113,17 @@ test('upload, listagem e download seguem os contratos da API', async () => {
     },
   );
   assert.equal(forwardedError, downloadError);
+});
+
+test('repositório local rejeita nomes que escapam do diretório de armazenamento', async () => {
+  await assert.rejects(
+    () => localFileRepository.getExistingPath('..'),
+    /Nome de arquivo local inválido/,
+  );
+  await assert.rejects(
+    () => localFileRepository.getExistingPath('../backend/package.json'),
+    /Nome de arquivo local inválido/,
+  );
 });
 
 test('multipart inválido retorna 400 INVALID_UPLOAD', async () => {

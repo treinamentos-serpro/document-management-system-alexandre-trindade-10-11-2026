@@ -3,16 +3,6 @@ const documentRepository = require('../repositories/documentRepository');
 const localFileRepository = require('../repositories/localFileRepository');
 const DocumentError = require('./documentError');
 
-function toPublicDocument(document) {
-  return {
-    id: document.id,
-    originalName: document.originalName,
-    size: document.size,
-    uploadedAt: document.uploadedAt,
-    owner: document.owner,
-  };
-}
-
 async function createDocument(uploadedFile) {
   if (!uploadedFile || !uploadedFile.filename) {
     throw new DocumentError(400, 'INVALID_UPLOAD', 'Envie um arquivo no campo "file".');
@@ -30,11 +20,10 @@ async function createDocument(uploadedFile) {
       uploadedAt: new Date().toISOString(),
       owner: 'default',
       storageFilename: uploadedFile.filename,
-      mimeType: uploadedFile.mimetype,
     };
 
     documentRepository.add(document);
-    return toPublicDocument(document);
+    return document;
   } catch (error) {
     await localFileRepository.remove(uploadedFile.filename).catch(() => {});
     throw error;
@@ -44,8 +33,7 @@ async function createDocument(uploadedFile) {
 function listDocuments() {
   return documentRepository
     .list()
-    .sort((first, second) => Date.parse(second.uploadedAt) - Date.parse(first.uploadedAt))
-    .map(toPublicDocument);
+    .sort((first, second) => Date.parse(second.uploadedAt) - Date.parse(first.uploadedAt));
 }
 
 async function getDownload(id) {
@@ -58,9 +46,8 @@ async function getDownload(id) {
   try {
     const filePath = await localFileRepository.getExistingPath(document.storageFilename);
     return {
-      document: toPublicDocument(document),
+      document,
       filePath,
-      mimeType: document.mimeType,
     };
   } catch (error) {
     if (error.code === 'ENOENT') {

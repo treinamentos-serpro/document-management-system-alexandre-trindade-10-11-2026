@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { formatFileSize } from '../utils/fileSize.js';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
@@ -103,11 +104,4 @@ export default function UploadComponent({ onUpload, isUploading, error, success 
       </button>
     </form>
   );
-}
-
-function formatFileSize(size) {
-  if (size < 1024) {
-    return `${size} B`;
-  }
-  return `${(size / (1024 * 1024)).toFixed(2)} MiB`;
 }

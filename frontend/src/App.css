@@ -422,6 +422,7 @@ h1 {
   cursor: pointer;
   font-size: 11px;
   font-weight: 700;
+  text-decoration: none;
   transition: border-color 150ms ease, background-color 150ms ease;
 }
 
@@ -430,27 +431,9 @@ h1 {
   background: #eaf0e2;
 }
 
-.download-button:disabled {
-  cursor: wait;
-  opacity: 0.55;
-}
-
 .download-button span {
   color: var(--coral);
   font-size: 16px;
-}
-
-.download-error {
-  width: 180px;
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 6px);
-  padding: 7px 9px;
-  color: #fffefa;
-  background: #8d3022;
-  font-size: 10px;
-  line-height: 1.4;
-  z-index: 1;
 }
 
 .list-state {

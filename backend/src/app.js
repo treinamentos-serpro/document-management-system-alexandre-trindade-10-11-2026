@@ -20,6 +20,10 @@ function isMultipartParseError(error) {
 }
 
 app.use(express.json());
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  next();
+});
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });

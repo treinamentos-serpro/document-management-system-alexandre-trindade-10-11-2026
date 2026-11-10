@@ -44,20 +44,6 @@ export async function uploadDocument(file) {
   return body.document;
 }
 
-export async function downloadDocument(id, originalName) {
-  const response = await fetchApi(
-    `/documents/${encodeURIComponent(id)}/download`,
-  );
-
-  if (!response.ok) {
-    throw new Error(await readError(response));
-  }
-
-  const fileUrl = URL.createObjectURL(await response.blob());
-  const link = document.createElement('a');
-  link.href = fileUrl;
-  link.download = originalName;
-  link.click();
-  link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(fileUrl), 1000);
+export function getDocumentDownloadUrl(id) {
+  return `${API_PREFIX}/documents/${encodeURIComponent(id)}/download`;
 }

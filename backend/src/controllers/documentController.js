@@ -1,12 +1,23 @@
 const documentService = require('../services/documentService');
 
+function toPublicDocument(document) {
+  return {
+    id: document.id,
+    originalName: document.originalName,
+    size: document.size,
+    uploadedAt: document.uploadedAt,
+    owner: document.owner,
+  };
+}
+
 async function uploadDocument(req, res) {
   const document = await documentService.createDocument(req.file);
-  return res.status(201).json({ document });
+  return res.status(201).json({ document: toPublicDocument(document) });
 }
 
 function listDocuments(req, res) {
-  return res.status(200).json({ documents: documentService.listDocuments() });
+  const documents = documentService.listDocuments().map(toPublicDocument);
+  return res.status(200).json({ documents });
 }
 
 async function downloadDocument(req, res, next) {
@@ -17,7 +28,7 @@ async function downloadDocument(req, res, next) {
     download.document.originalName,
     {
       headers: {
-        'Content-Type': download.mimeType || 'application/octet-stream',
+        'Content-Type': 'application/octet-stream',
       },
     },
     (error) => {

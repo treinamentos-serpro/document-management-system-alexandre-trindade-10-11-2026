@@ -8,7 +8,12 @@ function getPath(filename) {
     throw new Error('Nome de arquivo local inválido.');
   }
 
-  return path.join(storageDirectory, filename);
+  const filePath = path.resolve(storageDirectory, filename);
+  if (!filePath.startsWith(`${storageDirectory}${path.sep}`)) {
+    throw new Error('Nome de arquivo local inválido.');
+  }
+
+  return filePath;
 }
 
 async function ensureStorageDirectory() {
