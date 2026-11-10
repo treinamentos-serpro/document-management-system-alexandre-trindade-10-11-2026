@@ -5,6 +5,19 @@ const DocumentError = require('./services/documentError');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const multipartParseErrorMessages = new Set([
+  'Malformed content type',
+  'Missing Content-Type',
+  'Multipart: Boundary not found',
+  'Malformed part header',
+  'Unexpected end of file',
+  'Unexpected end of form',
+]);
+
+function isMultipartParseError(error) {
+  return multipartParseErrorMessages.has(error.message)
+    || error.message.startsWith('Unsupported content type: ');
+}
 
 app.use(express.json());
 
@@ -37,6 +50,16 @@ app.use((error, req, res, next) => {
       code = 'INVALID_UPLOAD';
       message = 'O envio do arquivo é inválido.';
     }
+  } else if (
+    req.method === 'POST'
+    && req.path === '/upload'
+    && error instanceof Error
+    && !error.code
+    && isMultipartParseError(error)
+  ) {
+    statusCode = 400;
+    code = 'INVALID_UPLOAD';
+    message = 'O envio do arquivo é inválido.';
   }
 
   return res.status(statusCode).json({ error: { code, message } });

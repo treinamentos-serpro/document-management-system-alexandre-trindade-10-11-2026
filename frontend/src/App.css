@@ -16,6 +16,7 @@
   --green-dark: #19382d;
   --lime: #d8eb72;
   --coral: #c9573e;
+  --coral-ink: #a63d2b;
 }
 
 * {
@@ -109,7 +110,7 @@ button {
 
 .eyebrow {
   margin: 0 0 12px;
-  color: var(--coral);
+  color: var(--coral-ink);
 }
 
 h1,
@@ -173,7 +174,7 @@ h1 {
 }
 
 .section-index {
-  color: var(--coral);
+  color: var(--coral-ink);
   font-variant-numeric: tabular-nums;
 }
 

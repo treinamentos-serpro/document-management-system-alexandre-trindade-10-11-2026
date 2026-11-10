@@ -44,6 +44,9 @@ export default function UploadComponent({ onUpload, isUploading, error, success 
   function handleDrop(event) {
     event.preventDefault();
     setIsDragging(false);
+    if (isUploading) {
+      return;
+    }
     chooseFile(event.dataTransfer.files[0]);
   }
 

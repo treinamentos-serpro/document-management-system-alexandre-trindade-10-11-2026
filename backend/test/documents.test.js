@@ -1,6 +1,8 @@
 const { after, before, test } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
 const app = require('../src/app');
+const documentController = require('../src/controllers/documentController');
 const documentRepository = require('../src/repositories/documentRepository');
 const localFileRepository = require('../src/repositories/localFileRepository');
 
@@ -95,4 +97,80 @@ test('upload, listagem e download seguem os contratos da API', async () => {
   const missingResponse = await fetch(`${baseUrl}/documents/unknown/download`);
   assert.equal(missingResponse.status, 404);
   assert.equal((await missingResponse.json()).error.code, 'DOCUMENT_NOT_FOUND');
+
+  const downloadError = new Error('Falha durante o download');
+  let forwardedError;
+  await documentController.downloadDocument(
+    { params: { id: document.id } },
+    {
+      headersSent: true,
+      download: (filePath, filename, options, callback) => callback(downloadError),
+    },
+    (error) => {
+      forwardedError = error;
+    },
+  );
+  assert.equal(forwardedError, downloadError);
+});
+
+test('multipart inválido retorna 400 INVALID_UPLOAD', async () => {
+  const missingBoundaryResponse = await fetch(`${baseUrl}/upload`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'multipart/form-data' },
+    body: '',
+  });
+  assert.equal(missingBoundaryResponse.status, 400);
+  assert.equal((await missingBoundaryResponse.json()).error.code, 'INVALID_UPLOAD');
+
+  const truncatedResponse = await fetch(`${baseUrl}/upload`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'multipart/form-data; boundary=broken' },
+    body: '--broken\r\nContent-Disposition: form-data; name="file"; filename="broken.txt"\r\n\r\nconteudo',
+  });
+  assert.equal(truncatedResponse.status, 400);
+  assert.equal((await truncatedResponse.json()).error.code, 'INVALID_UPLOAD');
+});
+
+test('upload limita quantidade e tamanho dos campos multipart', async () => {
+  const tooManyFieldsForm = new FormData();
+  tooManyFieldsForm.append('file', new Blob(['arquivo']), 'arquivo.txt');
+  for (let index = 0; index < 11; index += 1) {
+    tooManyFieldsForm.append(`field${index}`, 'value');
+  }
+  const tooManyFieldsResponse = await fetch(`${baseUrl}/upload`, {
+    method: 'POST',
+    body: tooManyFieldsForm,
+  });
+  assert.equal(tooManyFieldsResponse.status, 400);
+  assert.equal((await tooManyFieldsResponse.json()).error.code, 'INVALID_UPLOAD');
+
+  const oversizedFieldForm = new FormData();
+  oversizedFieldForm.append('file', new Blob(['arquivo']), 'arquivo.txt');
+  oversizedFieldForm.append('field', 'x'.repeat(1025));
+  const oversizedFieldResponse = await fetch(`${baseUrl}/upload`, {
+    method: 'POST',
+    body: oversizedFieldForm,
+  });
+  assert.equal(oversizedFieldResponse.status, 400);
+  assert.equal((await oversizedFieldResponse.json()).error.code, 'INVALID_UPLOAD');
+});
+
+test('falha de filesystem durante upload continua sendo erro interno', async () => {
+  const originalMkdir = fs.mkdir;
+  const filesystemError = Object.assign(new Error('Falha ao criar diretório'), {
+    code: 'EACCES',
+  });
+  fs.mkdir = async () => {
+    throw filesystemError;
+  };
+
+  try {
+    const form = new FormData();
+    form.append('file', new Blob(['arquivo']), 'arquivo.txt');
+    const response = await fetch(`${baseUrl}/upload`, { method: 'POST', body: form });
+    assert.equal(response.status, 500);
+    assert.equal((await response.json()).error.code, 'INTERNAL_ERROR');
+  } finally {
+    fs.mkdir = originalMkdir;
+  }
 });

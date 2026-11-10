@@ -21,7 +21,7 @@ async function downloadDocument(req, res, next) {
       },
     },
     (error) => {
-      if (error && !res.headersSent) {
+      if (error) {
         next(error);
       }
     },

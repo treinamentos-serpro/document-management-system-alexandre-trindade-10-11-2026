@@ -8,6 +8,7 @@ const documentController = require('../controllers/documentController');
 const router = express.Router();
 const storageDirectory = path.resolve(__dirname, '../../storage');
 const maxFileSize = 10 * 1024 * 1024;
+const maxFieldSize = 1024;
 
 const storage = multer.diskStorage({
   destination: (req, file, callback) => {
@@ -22,7 +23,12 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: maxFileSize, files: 1 },
+  limits: {
+    fileSize: maxFileSize,
+    files: 1,
+    fields: 10,
+    fieldSize: maxFieldSize,
+  },
 });
 
 router.post('/upload', upload.single('file'), documentController.uploadDocument);
