@@ -36,26 +36,4 @@ function listDocuments() {
     .sort((first, second) => Date.parse(second.uploadedAt) - Date.parse(first.uploadedAt));
 }
 
-async function getDownload(id) {
-  const document = documentRepository.findById(id);
-
-  if (!document) {
-    throw new DocumentError(404, 'DOCUMENT_NOT_FOUND', 'Documento não encontrado.');
-  }
-
-  try {
-    const filePath = await localFileRepository.getExistingPath(document.storageFilename);
-    return {
-      document,
-      filePath,
-    };
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      throw new DocumentError(404, 'DOCUMENT_NOT_FOUND', 'Documento não encontrado.');
-    }
-
-    throw error;
-  }
-}
-
-module.exports = { createDocument, listDocuments, getDownload };
+module.exports = { createDocument, listDocuments };
