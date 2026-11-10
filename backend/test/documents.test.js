@@ -5,6 +5,7 @@ const app = require('../src/app');
 const documentController = require('../src/controllers/documentController');
 const documentRepository = require('../src/repositories/documentRepository');
 const localFileRepository = require('../src/repositories/localFileRepository');
+const documentDownloadService = require('../src/services/documentDownloadService');
 
 let server;
 let baseUrl;
@@ -124,6 +125,28 @@ test('repositório local rejeita nomes que escapam do diretório de armazenament
     () => localFileRepository.getExistingPath('../backend/package.json'),
     /Nome de arquivo local inválido/,
   );
+});
+
+test('download trata arquivo local ausente como documento não encontrado', async () => {
+  const document = { id: 'missing-file', storageFilename: 'missing-file' };
+  const originalGetExistingPath = localFileRepository.getExistingPath;
+  const fileNotFoundError = Object.assign(new Error('Arquivo não encontrado'), {
+    code: 'ENOENT',
+  });
+  documentRepository.add(document);
+  localFileRepository.getExistingPath = async () => {
+    throw fileNotFoundError;
+  };
+
+  try {
+    await assert.rejects(
+      () => documentDownloadService.getDownload(document.id),
+      (error) => error.statusCode === 404 && error.code === 'DOCUMENT_NOT_FOUND',
+    );
+  } finally {
+    localFileRepository.getExistingPath = originalGetExistingPath;
+    documentRepository.removeById(document.id);
+  }
 });
 
 test('multipart inválido retorna 400 INVALID_UPLOAD', async () => {

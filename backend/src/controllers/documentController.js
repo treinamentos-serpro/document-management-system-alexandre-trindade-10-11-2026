@@ -1,4 +1,5 @@
 const documentService = require('../services/documentService');
+const documentDownloadService = require('../services/documentDownloadService');
 
 function toPublicDocument(document) {
   return {
@@ -21,7 +22,7 @@ function listDocuments(req, res) {
 }
 
 async function downloadDocument(req, res, next) {
-  const download = await documentService.getDownload(req.params.id);
+  const download = await documentDownloadService.getDownload(req.params.id);
 
   return res.download(
     download.filePath,
